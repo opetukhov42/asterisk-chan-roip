@@ -1,0 +1,57 @@
+# Build asterisk-chan-roip for each architecture.
+#
+#   docker compose build            # build the image once
+#   docker compose run --rm x86_64  # build for one target
+#   docker compose run --rm pi4
+#   ... etc. .ipk files appear in ./out/<target>/
+#
+# Or build several: docker compose run --rm x86_64 ; docker compose run --rm pi4
+
+x-base: &base
+  build: .
+  image: chan-roip-builder:24.10.1
+  volumes:
+    - ./src:/work/src:ro
+    - ./out:/out
+  # Set ALSO_BUILD_BASE=1 to also emit the base asterisk .ipk (guarantees a
+  # matching buildopt sum if you install both together).
+  # environment:
+  #   ALSO_BUILD_BASE: "1"
+
+services:
+  x86_64:
+    <<: *base
+    environment: { TARGET: "x86/64" }
+
+  x86_generic:            # 32-bit x86 ("i386")
+    <<: *base
+    environment: { TARGET: "x86/generic" }
+
+  pi1:                    # Pi 1 / Zero / Zero W  (BCM2835, ARMv6)
+    <<: *base
+    environment: { TARGET: "bcm27xx/bcm2708" }
+
+  pi2:                    # Pi 2  (BCM2836, ARMv7)
+    <<: *base
+    environment: { TARGET: "bcm27xx/bcm2709" }
+
+  pi3:                    # Pi 3 / Zero 2 W  (BCM2837, aarch64)
+    <<: *base
+    environment: { TARGET: "bcm27xx/bcm2710" }
+
+  pi4:                    # Pi 4 / 400 / CM4  (BCM2711, aarch64)
+    <<: *base
+    environment: { TARGET: "bcm27xx/bcm2711" }
+
+  # --- Vanilla (non-OpenWrt) Asterisk: builds a plain chan_roip.so ---
+  vanilla:
+    build:
+      context: .
+      dockerfile: Dockerfile.vanilla
+    image: chan-roip-vanilla:latest
+    volumes:
+      - ./src:/work/src:ro
+      - ./out:/out
+    # environment:
+    #   ASTVER: "20.8.1"     # match the Asterisk version you run
+    #   FULL_BUILD: "1"      # build via Asterisk's own make instead of standalone

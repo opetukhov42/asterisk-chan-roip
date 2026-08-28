@@ -1,0 +1,23 @@
+# Vanilla-Asterisk build environment for chan_roip.
+# Builds a plain chan_roip.so against Asterisk source (default 20.8.1) for a
+# standard (non-OpenWrt, glibc) Asterisk install. Complements the OpenWrt .ipk
+# path in the main Dockerfile.
+
+FROM ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Asterisk build prerequisites (enough to ./configure and build one module).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential curl ca-certificates \
+        libasound2-dev libedit-dev libjansson-dev libxml2-dev libsqlite3-dev \
+        uuid-dev libncurses-dev libssl-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash builder
+USER builder
+WORKDIR /home/builder
+
+COPY --chown=builder:builder build_vanilla.sh /work/
+
+ENV ASTVER=20.8.1
+ENTRYPOINT ["/bin/bash", "/work/build_vanilla.sh"]
