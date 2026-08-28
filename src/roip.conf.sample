@@ -1,0 +1,48 @@
+;
+; chan_roip.conf  -- Radio over IP (RoIP): ALSA audio + serial PTT/COR
+;
+; One [section] per radio device. The section name is the device name you
+; reference from the dialplan, e.g. Dial(roip/roip0).
+;
+
+[roip0]
+; --- Audio (ALSA) ---
+input_device=plughw:1,0          ; ALSA capture device (arecord -l to list)
+output_device=plughw:1,0         ; ALSA playback device
+;silencesuppression=0
+;silencethreshold=1000
+
+; --- Serial control / PTT / COR ---
+serial_device=/dev/ttyUSB0       ; control + PTT/COR line
+serial_disable=0                 ; 0 = use serial (required for PTT/COR)
+;serial_baudrate=57600
+;force_hardware_eptt=0           ; 1 = key PTT via serial DTR (hardware EPTT)
+;invertptt=0                     ; invert PTT polarity if your interface needs it
+
+; --- Carrier / squelch source ---
+carrierfrom=serialdsr            ; no | serialdsr | serialdsrinvert
+ctcssfrom=no
+
+; --- Behaviour ---
+duplex=1                         ; 1 = full duplex (RX while TX); 0 = half duplex
+usedtmf=1                        ; decode DTMF from RX audio
+rxondelay=4                      ; delay (in 20ms frames) before passing RX audio
+
+; --- COR-triggered inbound calls (Option C) ---
+context=from-radio               ; dialplan context for COR-originated calls
+extension=s                      ; extension to start at
+cor_start_call=1                 ; originate a call on COR rising edge
+cor_hangup=0                     ; 0 recommended: let the dialplan tear the call down
+
+; --- PTT-on-call ---
+ptt_on_call=1                    ; key PTT for the whole duration of an inbound Dial();
+                                 ; released automatically on hangup. Needs serial enabled.
+
+; Notes:
+;  * CLI (prefix is "roip", not "roip"):
+;      roip ptt on|off     - manually key/unkey the active device (carrier only)
+;      roip key | unkey    - same via txtestkey
+;      roip rkey | runkey  - simulate COR active/inactive (test the COR path)
+;      roip active [name]  - show/select which device the CLI commands act on
+;  * COR never hangs up a Dial()-originated call (only COR-originated ones, and only
+;    when cor_hangup=1), so ptt_on_call is safe to combine with cor_start_call.
